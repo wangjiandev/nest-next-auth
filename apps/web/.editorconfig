@@ -1,0 +1,19 @@
+# EditorConfig helps developers define and maintain consistent
+# EditorConfig帮助开发人员定义和维护一致性
+# coding styles between different editors and IDEs
+# 不同编辑器和ide之间的编码样式
+# 打开需要格式化的文件并手动格式化代码（Mac OS ：shift+option+f  Windows ：shift+alt+f）
+
+# editorconfig.org
+
+# editorconfig顶级配置文件,停止向上寻找配置文件
+root = true
+
+
+[*]
+# change these settings to your own preference
+# 将这些设置更改为您自己的首选项
+# 缩进样式=空格
+indent_style = space
+# 缩进大小=4
+indent_size = 4

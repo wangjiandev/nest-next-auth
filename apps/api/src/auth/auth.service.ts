@@ -1,38 +1,60 @@
 import { UserService } from 'src/user/user.service';
 import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
+    ConflictException,
+    Injectable,
+    UnauthorizedException,
 } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { verify } from 'argon2';
+import type { AuthJwtPayload } from './types/auth-jwt-payload';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {}
+    constructor(
+        private readonly userService: UserService,
+        private readonly jwtService: JwtService,
+    ) {}
 
-  async register(createUserDto: CreateUserDto) {
-    const user = await this.userService.findByEmail(createUserDto.email);
-    if (user) {
-      throw new ConflictException('User already exists');
+    async register(createUserDto: CreateUserDto) {
+        const user = await this.userService.findByEmail(createUserDto.email);
+        if (user) {
+            throw new ConflictException('User already exists');
+        }
+        return await this.userService.create(createUserDto);
     }
-    return await this.userService.create(createUserDto);
-  }
 
-  async validateLocalUser(email: string, password: string) {
-    const user = await this.userService.findByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    async validateLocalUser(email: string, password: string) {
+        const user = await this.userService.findByEmail(email);
+        if (!user) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        const isPasswordMatched = await verify(user.password, password);
+        if (!isPasswordMatched) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        return {
+            id: user.id,
+            name: user.name,
+        };
     }
-    const isPasswordMatched = await verify(user.password, password);
-    if (!isPasswordMatched) {
-      throw new UnauthorizedException('Invalid credentials');
+
+    async login(id: number, name?: string) {
+        const { access_token } = await this.generateToken(id);
+        return {
+            id,
+            name,
+            access_token,
+        };
     }
-    return {
-      id: user.id,
-      name: user.name,
-    };
-  }
+
+    async generateToken(id: number) {
+        const payload: AuthJwtPayload = { sub: id };
+
+        const [accessToken] = await Promise.all([
+            this.jwtService.signAsync(payload),
+        ]);
+
+        return { access_token: accessToken };
+    }
 }
